@@ -48,7 +48,7 @@ public class MobSpawn implements Listener {
                 return;
             }
 
-            if (!passWorld(e.getEntity().getWorld())) return;
+            if (!passWorld(entity.getWorld())) return;
 
             if (plugin.getWorldGuard() != null) {
                 if (!(plugin.getWorldGuard().mobsEnabled(e.getLocation()))) {
@@ -59,14 +59,14 @@ public class MobSpawn implements Listener {
             List<String> mobs = plugin.optionList("mob_replacements.list");
             String type = plugin.optionString("mob_replacements.type");
 
-            if (type.equalsIgnoreCase("blacklist") && (mobs.contains(e.getEntity().getType().name()) || mobs.contains("*"))) {
+            if (type.equalsIgnoreCase("blacklist") && (mobs.contains(entity.getType().name()) || mobs.contains("*"))) {
                 return;
-            } else if (type.equalsIgnoreCase("whitelist") && (!mobs.contains(e.getEntity().getType().name().toUpperCase(Locale.ROOT)) && !mobs.contains("*"))) {
+            } else if (type.equalsIgnoreCase("whitelist") && (!mobs.contains(entity.getType().name().toUpperCase(Locale.ROOT)) && !mobs.contains("*"))) {
                 return;
             }
 
             if (!plugin.optionBoolean("custom_name.allow_override")) {
-                if (e.getEntity().getCustomName() != null) {
+                if (entity.getCustomName() != null) {
                     return;
                 }
             }
@@ -100,7 +100,7 @@ public class MobSpawn implements Listener {
         }
     }
 
-    public BukkitRunnable changeMob(LivingEntity entity, int radius) {
+    private BukkitRunnable changeMob(LivingEntity entity, int radius) {
         return new BukkitRunnable() {
             @Override
             public void run() {
@@ -200,7 +200,7 @@ public class MobSpawn implements Listener {
         return overrideLevel;
     }
 
-    public int correctLevel(Location loc, int level) {
+    private int correctLevel(Location loc, int level) {
         WorldGuardHook wg = plugin.getWorldGuard();
         if (wg == null) {
             return level;
