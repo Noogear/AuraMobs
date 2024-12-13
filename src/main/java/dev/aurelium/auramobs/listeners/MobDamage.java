@@ -5,10 +5,7 @@ import dev.aurelium.auramobs.util.ColorUtils;
 import org.bukkit.Difficulty;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -26,14 +23,21 @@ public class MobDamage implements Listener {
     private final AuraMobs plugin;
     private final NamespacedKey force;
     private final Map<Difficulty, Double> creeperDamage;
+    private final Map<Difficulty, Double> ghastDamage;
 
     public MobDamage(AuraMobs plugin) {
         this.plugin = plugin;
         this.force = new NamespacedKey(plugin, "arrow-damage");
+
         this.creeperDamage = new HashMap<>();
         creeperDamage.put(Difficulty.EASY, 24.5);
         creeperDamage.put(Difficulty.NORMAL, 48.5);
         creeperDamage.put(Difficulty.HARD, 72.5);
+
+        this.ghastDamage = new HashMap<>();
+        ghastDamage.put(Difficulty.EASY, 9.0);
+        ghastDamage.put(Difficulty.NORMAL, 17.0);
+        ghastDamage.put(Difficulty.HARD, 25.0);
 
     }
 
@@ -87,7 +91,7 @@ public class MobDamage implements Listener {
 
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
-    public void onArrowHit(EntityDamageByEntityEvent e) {
+    public void onProjectileHit(EntityDamageByEntityEvent e) {
         if (!(e.getDamager() instanceof Projectile p)) {
             return;
         }
@@ -102,7 +106,7 @@ public class MobDamage implements Listener {
 
         double attack = (entity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).getValue() - 2.0);
         if (attack <= 0) return;
-        e.setDamage(p.getPersistentDataContainer().getOrDefault(force, PersistentDataType.FLOAT, 1f) * attack + e.getDamage());
+        e.setDamage(p.getPersistentDataContainer().getOrDefault(force, PersistentDataType.FLOAT, 0.3f) * attack + e.getDamage());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
@@ -110,20 +114,24 @@ public class MobDamage implements Listener {
         if (e.getCause() != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
             return;
         }
+        Entity damager = e.getDamager();
+        if (damager instanceof Creeper creeper) {
+            handleExplosionDamage(e, creeper, creeperDamage);
+        } else if (damager instanceof Fireball fireball && fireball.getShooter() instanceof Ghast ghast) {
+            handleExplosionDamage(e, ghast, ghastDamage);
+        }
+    }
 
-        if (!(e.getDamager() instanceof Creeper entity)) {
+
+    private void handleExplosionDamage(EntityDamageByEntityEvent e, LivingEntity mob, Map<Difficulty, Double> damageMap) {
+        if (!plugin.isAuraMob(mob)) {
             return;
         }
-
-        if (!plugin.isAuraMob(entity)) {
-            return;
-        }
-
-        double attack = entity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).getValue() - 2.0;
+        double attack = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).getValue() - 2.0;
         if (attack <= 0) return;
-        Difficulty difficulty = entity.getWorld().getDifficulty();
+        Difficulty difficulty = mob.getWorld().getDifficulty();
         double damage = e.getDamage();
-        e.setDamage((damage / creeperDamage.get(difficulty)) * attack + damage);
+        e.setDamage((damage / damageMap.get(difficulty)) * attack + damage);
     }
 
 }
